@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>작업기억 향상 카드게임 (버그 수정완료)</title>
+    <title>작업기억 향상 카드게임 (4개부터 시작)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -146,7 +146,7 @@
 
 <div class="game-card">
     <div class="header">
-        <div id="stageBadge" class="stage-badge">단계 1 / 100</div>
+        <div id="stageBadge" class="stage-badge">단계 1 / 80</div>
         <div id="instruction" class="instruction">게임 시작 버튼을 눌러주세요!</div>
     </div>
 
@@ -178,11 +178,11 @@
 </div>
 
 <script>
-    // 총 100단계 생성 (3개부터 7개까지, 각각 정순 10개 + 역순 10개)
+    // 총 80단계 생성 (4개부터 7개까지, 각각 정순 10개 + 역순 10개)
     const stages = [];
     const QUESTIONS_PER_TYPE = 10;
 
-    for (let count = 3; count <= 7; count++) {
+    for (let count = 4; count <= 7; count++) {
         // 정순 10문제
         for (let q = 1; q <= QUESTIONS_PER_TYPE; q++) {
             stages.push({ count: count, reverse: false, round: q });
@@ -196,11 +196,10 @@
     let currentStageIdx = 0;
     let targetNumbers = [];
     let userInput = "";
-    let hideTimer = null;    // 카드 숨김 타이머
-    let nextTimer = null;    // 다음 단계 이동 타이머
+    let hideTimer = null;
+    let nextTimer = null;
 
     function startStage() {
-        // 기존 실행 중인 타이머가 있다면 완벽히 취소 (중복 실행 방지)
         if (hideTimer) clearTimeout(hideTimer);
         if (nextTimer) clearTimeout(nextTimer);
 
@@ -222,7 +221,7 @@
             targetNumbers.push(Math.floor(Math.random() * 9) + 1);
         }
 
-        // 카드 생성 및 보이기
+        // 카드 생성
         const container = document.getElementById('cardsContainer');
         container.innerHTML = '';
         targetNumbers.forEach(num => {
@@ -234,7 +233,7 @@
 
         document.getElementById('instruction').textContent = "숫자를 잘 기억하세요! (3초 후 숨겨집니다)";
 
-        // 정확히 3초 후 카드를 숨기고 입력창 보이기
+        // 3초 후 숨김 및 입력창 표시
         hideTimer = setTimeout(() => {
             const cards = container.querySelectorAll('.card');
             cards.forEach(card => {
@@ -268,19 +267,17 @@
     function checkAnswer() {
         const stage = stages[currentStageIdx];
         
-        // 정답 계산
         let correctAnswer = stage.reverse 
             ? [...targetNumbers].reverse().join('')
             : targetNumbers.join('');
 
         const msg = document.getElementById('message');
-        document.getElementById('submitBtn').disabled = true; // 중복 클릭 방지
+        document.getElementById('submitBtn').disabled = true;
 
         if (userInput === correctAnswer) {
             msg.className = "message success";
             msg.textContent = "정답입니다! 🎉 다음 문제로 넘어갑니다.";
             
-            // 1.2초 후 자동으로 다음 문제 시작
             nextTimer = setTimeout(() => {
                 currentStageIdx++;
                 if (currentStageIdx < stages.length) {
@@ -288,7 +285,7 @@
                 } else {
                     document.getElementById('cardsContainer').innerHTML = '';
                     document.getElementById('inputSection').style.display = 'none';
-                    document.getElementById('instruction').textContent = "축하합니다! 100단계를 모두 완료했습니다! 🏆";
+                    document.getElementById('instruction').textContent = "축하합니다! 모든 단계를 마스터하셨습니다! 🏆";
                     document.getElementById('stageBadge').textContent = "완료";
                     msg.textContent = "";
                 }
@@ -297,7 +294,6 @@
             msg.className = "message error";
             msg.textContent = `아쉽네요! 정답은 [${correctAnswer}] 입니다. 다시 도전해보세요!`;
             
-            // 2초 후 현재 문제 다시 시작
             nextTimer = setTimeout(() => {
                 startStage();
             }, 2000);
