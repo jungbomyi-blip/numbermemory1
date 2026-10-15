@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>작업기억 향상 카드게임 (버그 수정완료)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+        }
+        body {
+            background-color: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .game-card {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 520px;
+            text-align: center;
+        }
+        .header {
+            margin-bottom: 20px;
+        }
+        .stage-badge {
+            display: inline-block;
+            background-color: #e0e7ff;
+            color: #4338ca;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        .instruction {
+            font-size: 18px;
+            color: #334155;
+            font-weight: 600;
+            min-height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .cards-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 25px 0;
+            min-height: 90px;
+            flex-wrap: wrap;
+        }
+        .card {
+            width: 52px;
+            height: 78px;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white;
+            font-size: 30px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+            animation: flip 0.3s ease-out;
+        }
+        .card.hidden {
+            background: linear-gradient(135deg, #cbd5e1, #94a3b8);
+            color: transparent;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        @keyframes flip {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .input-section {
+            margin-top: 20px;
+        }
+        .numpad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 280px;
+            margin: 15px auto 0;
+        }
+        .num-btn {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            padding: 12px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #1e293b;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        .num-btn:active {
+            background: #e2e8f0;
+            transform: scale(0.95);
+        }
+        .user-answer {
+            font-size: 28px;
+            letter-spacing: 8px;
+            font-weight: bold;
+            color: #4f46e5;
+            min-height: 40px;
+            border-bottom: 2px solid #cbd5e1;
+            margin-bottom: 15px;
+            padding: 5px;
+        }
+        .btn-action {
+            width: 100%;
+            padding: 14px;
+            background-color: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .btn-action:hover {
+            background-color: #4338ca;
+        }
+        .btn-action:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+        }
+        .message {
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .message.success { color: #16a34a; }
+        .message.error { color: #dc2626; }
+    </style>
+</head>
+<body>
+
+<div class="game-card">
+    <div class="header">
+        <div id="stageBadge" class="stage-badge">단계 1 / 100</div>
+        <div id="instruction" class="instruction">게임 시작 버튼을 눌러주세요!</div>
+    </div>
+
+    <div id="cardsContainer" class="cards-container"></div>
+
+    <div id="inputSection" class="input-section" style="display: none;">
+        <div id="userAnswer" class="user-answer"></div>
+        <div class="numpad">
+            <button class="num-btn" onclick="pressNum(1)">1</button>
+            <button class="num-btn" onclick="pressNum(2)">2</button>
+            <button class="num-btn" onclick="pressNum(3)">3</button>
+            <button class="num-btn" onclick="pressNum(4)">4</button>
+            <button class="num-btn" onclick="pressNum(5)">5</button>
+            <button class="num-btn" onclick="pressNum(6)">6</button>
+            <button class="num-btn" onclick="pressNum(7)">7</button>
+            <button class="num-btn" onclick="pressNum(8)">8</button>
+            <button class="num-btn" onclick="pressNum(9)">9</button>
+            <button class="num-btn" style="grid-column: span 2;" onclick="pressNum(0)">0</button>
+            <button class="num-btn" style="background:#fee2e2; color:#dc2626;" onclick="clearInput()">지우기</button>
+        </div>
+        <button id="submitBtn" class="btn-action" onclick="checkAnswer()">확인</button>
+    </div>
+
+    <div id="startSection">
+        <button id="startBtn" class="btn-action" onclick="startStage()">게임 시작하기</button>
+    </div>
+
+    <div id="message" class="message"></div>
+</div>
+
+<script>
+    // 총 100단계 생성 (3개부터 7개까지, 각각 정순 10개 + 역순 10개)
+    const stages = [];
+    const QUESTIONS_PER_TYPE = 10;
+
+    for (let count = 3; count <= 7; count++) {
+        // 정순 10문제
+        for (let q = 1; q <= QUESTIONS_PER_TYPE; q++) {
+            stages.push({ count: count, reverse: false, round: q });
+        }
+        // 역순 10문제
+        for (let q = 1; q <= QUESTIONS_PER_TYPE; q++) {
+            stages.push({ count: count, reverse: true, round: q });
+        }
+    }
+
+    let currentStageIdx = 0;
+    let targetNumbers = [];
+    let userInput = "";
+    let hideTimer = null;    // 카드 숨김 타이머
+    let nextTimer = null;    // 다음 단계 이동 타이머
+
+    function startStage() {
+        // 기존 실행 중인 타이머가 있다면 완벽히 취소 (중복 실행 방지)
+        if (hideTimer) clearTimeout(hideTimer);
+        if (nextTimer) clearTimeout(nextTimer);
+
+        const stage = stages[currentStageIdx];
+        userInput = "";
+        document.getElementById('userAnswer').textContent = "";
+        document.getElementById('message').textContent = "";
+        document.getElementById('startSection').style.display = 'none';
+        document.getElementById('inputSection').style.display = 'none';
+        document.getElementById('submitBtn').disabled = false;
+
+        const directionText = stage.reverse ? "거꾸로" : "순서대로";
+        document.getElementById('stageBadge').textContent = 
+            `단계 ${currentStageIdx + 1} / ${stages.length} [카드 ${stage.count}개 - ${directionText} (${stage.round}/10)]`;
+
+        // 무작위 숫자 생성 (1~9)
+        targetNumbers = [];
+        for (let i = 0; i < stage.count; i++) {
+            targetNumbers.push(Math.floor(Math.random() * 9) + 1);
+        }
+
+        // 카드 생성 및 보이기
+        const container = document.getElementById('cardsContainer');
+        container.innerHTML = '';
+        targetNumbers.forEach(num => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.textContent = num;
+            container.appendChild(card);
+        });
+
+        document.getElementById('instruction').textContent = "숫자를 잘 기억하세요! (3초 후 숨겨집니다)";
+
+        // 정확히 3초 후 카드를 숨기고 입력창 보이기
+        hideTimer = setTimeout(() => {
+            const cards = container.querySelectorAll('.card');
+            cards.forEach(card => {
+                card.classList.add('hidden');
+                card.textContent = '?';
+            });
+
+            if (stage.reverse) {
+                document.getElementById('instruction').textContent = "기억한 숫자를 [거꾸로] 입력하세요!";
+            } else {
+                document.getElementById('instruction').textContent = "기억한 숫자를 [순서대로] 입력하세요!";
+            }
+
+            document.getElementById('inputSection').style.display = 'block';
+        }, 3000);
+    }
+
+    function pressNum(num) {
+        const stage = stages[currentStageIdx];
+        if (userInput.length < stage.count) {
+            userInput += num;
+            document.getElementById('userAnswer').textContent = userInput;
+        }
+    }
+
+    function clearInput() {
+        userInput = "";
+        document.getElementById('userAnswer').textContent = "";
+    }
+
+    function checkAnswer() {
+        const stage = stages[currentStageIdx];
+        
+        // 정답 계산
+        let correctAnswer = stage.reverse 
+            ? [...targetNumbers].reverse().join('')
+            : targetNumbers.join('');
+
+        const msg = document.getElementById('message');
+        document.getElementById('submitBtn').disabled = true; // 중복 클릭 방지
+
+        if (userInput === correctAnswer) {
+            msg.className = "message success";
+            msg.textContent = "정답입니다! 🎉 다음 문제로 넘어갑니다.";
+            
+            // 1.2초 후 자동으로 다음 문제 시작
+            nextTimer = setTimeout(() => {
+                currentStageIdx++;
+                if (currentStageIdx < stages.length) {
+                    startStage();
+                } else {
+                    document.getElementById('cardsContainer').innerHTML = '';
+                    document.getElementById('inputSection').style.display = 'none';
+                    document.getElementById('instruction').textContent = "축하합니다! 100단계를 모두 완료했습니다! 🏆";
+                    document.getElementById('stageBadge').textContent = "완료";
+                    msg.textContent = "";
+                }
+            }, 1200);
+        } else {
+            msg.className = "message error";
+            msg.textContent = `아쉽네요! 정답은 [${correctAnswer}] 입니다. 다시 도전해보세요!`;
+            
+            // 2초 후 현재 문제 다시 시작
+            nextTimer = setTimeout(() => {
+                startStage();
+            }, 2000);
+        }
+    }
+</script>
+
+</body>
+</html>
